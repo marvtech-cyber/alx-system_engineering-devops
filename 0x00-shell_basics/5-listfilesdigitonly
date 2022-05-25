@@ -1,2 +1,2 @@
 #!/bin/bash
-id root ls -l -a
+ ls -l tree -a
