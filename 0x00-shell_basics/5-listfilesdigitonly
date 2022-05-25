@@ -1,2 +1,2 @@
 #!/bin/bash
-ls -l | tree -a root
+ls -l | wc -l
