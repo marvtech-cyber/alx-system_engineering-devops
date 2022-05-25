@@ -1,2 +1,2 @@
 #!/bin/bash
-ls -l -a | tree -a
+ls -l | tree -a root
