@@ -1,2 +1,2 @@
 #!/bin/bash
-chmod a+X $(find /tmp -type d)
+chmod ugo+x $(find /tmp -type d)
