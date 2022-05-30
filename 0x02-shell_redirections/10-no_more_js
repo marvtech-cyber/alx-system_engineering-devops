@@ -1,2 +1,2 @@
 #!/bin/bash
-ls type -d |rm *.js
+ls type -f |rm *.js
