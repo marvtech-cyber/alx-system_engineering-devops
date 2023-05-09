@@ -1,23 +1,17 @@
 #!/usr/bin/python3
-"""0-subs defines a function number_of_subscribers that queries the
-reddit api and returns number of subscribers for a specific subreddit
-"""
-import requests
+"""Module for task 0"""
 
 
 def number_of_subscribers(subreddit):
-    """returns the number of subscribers for subreddit"""
-    headers = {'user-Agent': 'marvinrequest'}
-    url = 'https://www.reddit.com/r/{}/about.json'.format(subreddit)
-    req = requests.get(url, headers=headers)
-    if req.status_code == 302 or req.status_code == 404:
+    """Queries the Reddit API and returns the number of subscribers
+    to the subreddit"""
+    import requests
+
+    sub_info = requests.get("https://www.reddit.com/r/{}/about.json"
+                            .format(subreddit),
+                            headers={"User-Agent": "My-User-Agent"},
+                            allow_redirects=False)
+    if sub_info.status_code >= 300:
         return 0
-    req = req.json()
-    if 'error' in req:
-        return 0
-    elif req.get('data', None) is not None:
-        res = req.get('data').get('subscribers', None)
-        if res is not None:
-            return res
-        else:
-            return 0
+
+    return sub_info.json().get("data").get("subscribers")
