@@ -1,49 +1,71 @@
-s module defines the number_of_subscribers function.
+
+n that queries the Reddit API and prints
+the top ten hot posts of a subreddit
 """
+import re
+import requests
+import sys
 
-import praw
 
-def count_words(subreddit, word_list, hot_list=None, count_dict=None):
-    # Create PRAW instance
-    reddit = praw.Reddit(client_id='YOUR_CLIENT_ID',
-                         client_secret='YOUR_CLIENT_SECRET',
-                         user_agent='YOUR_USER_AGENT')
+def add_title(dictionary, hot_posts):
+    """ Adds item into a list """
+    if len(hot_posts) == 0:
+        return
 
-    # Create hot_list and count_dict if not provided
-    if hot_list is None:
-        hot_list = []
-    if count_dict is None:
-        count_dict = {}
+    title = hot_posts[0]['data']['title'].split()
+    for word in title:
+        for key in dictionary.keys():
+            c = re.compile("^{}$".format(key), re.I)
+            if c.findall(word):
+                dictionary[key] += 1
+    hot_posts.pop(0)
+    add_title(dictionary, hot_posts)
 
-    # Get hot articles from subreddit
-    subreddit_obj = reddit.subreddit(subreddit)
-    hot_articles = subreddit_obj.hot(limit=100)
 
-    # Iterate through hot articles and add titles to hot_list
-    for article in hot_articles:
-        hot_list.append(article.title)
+def recurse(subreddit, dictionary, after=None):
+    """ Queries to Reddit API """
+    u_agent = 'Mozilla/5.0'
+    headers = {
+        'User-Agent': u_agent
+    }
 
-    # Count occurrences of each word in hot_list
+    params = {
+        'after': after
+    }
+
+    url = "https://www.reddit.com/r/{}/hot.json".format(subreddit)
+    res = requests.get(url,
+                       headers=headers,
+                       params=params,
+                       allow_redirects=False)
+
+    if res.status_code != 200:
+        return None
+
+    dic = res.json()
+    hot_posts = dic['data']['children']
+    add_title(dictionary, hot_posts)
+    after = dic['data']['after']
+    if not after:
+        return
+    recurse(subreddit, dictionary, after=after)
+
+
+def count_words(subreddit, word_list):
+    """ Init function """
+    dictionary = {}
+
     for word in word_list:
-        count = sum(1 for title in hot_list if word.lower() in title.lower().split())
-        if count > 0:
-            # Add word to count_dict
-            if word.lower() not in count_dict:
-                count_dict[word.lower()] = count
-            else:
-                count_dict[word.lower()] += count
+        dictionary[word] = 0
 
-    # If there are more hot articles, recursively call function with updated hot_list and count_dict
-    if subreddit_obj._path.endswith('/hot'):
-        next_subreddit = subreddit_obj._path[:-4]
+    recurse(subreddit, dictionary)
+
+    l = sorted(dictionary.items(), key=lambda kv: kv[1])
+    l.reverse()
+
+    if len(l) != 0:
+        for item in l:
+            if item[1] is not 0:
+                print("{}: {}".format(item[0], item[1]))
     else:
-        next_subreddit = subreddit_obj._path + '/hot'
-    try:
-        return count_words(next_subreddit, word_list, hot_list=hot_list, count_dict=count_dict)
-    except:
-        pass
-
-    # Sort count_dict by count and then alphabetically
-    sorted_count = sorted(count_dict.items(), key=lambda x: (-x[1], x[0]))
-    for word, count in sorted_count:
-        print(word + ':', count)
+        print("")
