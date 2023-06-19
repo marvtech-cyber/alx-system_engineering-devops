@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2086
+# fetches information about server domains and assigns subdomain to specific servers.
+
+do_domain() {
+        SUBDOMAINS=()
+        if [ -n "$2" ]; then
+                readarray -t SUBDOMAINS < <(echo "$2" | tr " " "\n")
+                for sub in "${SUBDOMAINS[@]}"; do
+                        dig "$sub.$1" | grep -A1 'ANSWER SECTION:' | tail -n 1 | awk '{split($0, subdomain, "."); print "The subdomain " subdomain[1] " is a " $4 " record and points to " $5}'
+                done
+        else
+                dig "$2.$1" | grep -A1 'ANSWER SECTION:' | tail -n 1 | awk '{split($0, subdomain, "."); print "The subdomain " subdomain[1] " is a " $4 " record and points to " $5}'
+        fi
+}
+
+if [ "${#BASH_ARGV[@]}" -ge '2' ]; then
+        do_domain "$1" "$2"
+elif [ "${#BASH_ARGV[@]}" -ge '1' ]; then
+        do_domain "$1" "www lb-01 web-01 web-02"
+else
+        exit
+fi
